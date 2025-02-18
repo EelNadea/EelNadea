@@ -1,0 +1,186 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+
+#define TABLE_SIZE 32 //hash table size
+#define BUFFER 65 //buffer space for username and password
+
+//self-referential-structure for linked lists when handling collisions from the hash
+typedef struct account {
+    bool Authenticated;
+    char Username[BUFFER];
+    char Password[BUFFER];
+    double Balance;
+    struct account *next;
+} account;
+
+typedef struct hashTable {
+    account *table[TABLE_SIZE];
+} hashTable;
+
+account* AccountCreator(char *username, char *password, double balance) {
+    //allocate memory for the new account
+    account *newAccount = (account *)malloc(sizeof(account));
+
+    if (newAccount == NULL) {
+        printf("Memory allocation failed\n");
+        exit(1);
+    }
+
+    //initialize the variables
+    newAccount->Authenticated = false;
+    strcpy(newAccount->Username, username);
+    strcpy(newAccount->Password, password);
+    newAccount->Balance = balance;
+    newAccount->next = NULL;
+
+    return newAccount;
+}
+
+/*This hashCode function generates a hash value for a given string (key)
+by shifting the current hash value 5 bits to the left and adding the ASCII value of each character,
+then returns the hash value modulo the table size (TABLE_SIZE) to ensure it fits within the array bounds.*/
+unsigned int hashCode(char *key) {
+    unsigned int hash = 0;
+    while (*key) {
+        hash = (hash << 5) + *key++;
+    }
+
+    return hash % TABLE_SIZE;
+}
+
+/*The InsertAccount function calculates the hash index for the given account's username,
+then adds the account to the front of the linked list at that index in the hash table by updating the account's next pointer
+and the table entry.*/
+void InsertAccount(hashTable *ht, account *acc) {
+    unsigned int index = hashCode(acc->Username);
+
+    acc->next = ht->table[index];
+    ht->table[index] = acc;
+}
+
+/*The findAccount function calculates the hash index for the given username,
+then traverses the linked list at that index in the hash table
+to find and return the account with the matching username;
+if no match is found, it returns NULL and prints a message.*/
+account* findAccount(hashTable *ht, char *username) {
+    unsigned int index = hashCode(username);
+
+    account *current = ht->table[index];
+    while (current != NULL) {
+
+        if (strcmp(current->Username, username) == 0) {
+            return current;
+        }
+        current = current->next;
+    }
+    printf("No account found with username '%s'\n", username); // Debug print
+    return NULL;
+}
+
+//if login successful, print balance
+bool ShowBal(bool CheckUserPass, double *Balance) {
+    if (CheckUserPass == true) {
+        printf("\nBalance: $%lf\n", *Balance);
+        return true;
+    } 
+    else {
+        printf("\nIncorrect username or password.");
+        return false;
+    }
+}
+
+//withdraw or deposit
+void WithOrDep(bool *ShowBalReceive, double *Balance) {
+    if (*ShowBalReceive == true) {
+        char answer[5];
+        printf("\nDeposit(dep) or Withdraw(with): "); scanf("%s", answer);
+
+        double Deposit = 0;
+        double Withdraw = 0;
+
+        if (strcmp("dep", answer) == 0) {
+            printf("Enter money to deposit: "); scanf("%lf", &Deposit);
+            *Balance += Deposit;
+            printf("\nNew balance: $%lf", *Balance);
+        } 
+        else if (strcmp("with", answer) == 0) {
+            printf("Enter money to withdraw: "); scanf("%lf", &Withdraw);
+
+            if (Withdraw > *Balance) {
+                printf("Invalid amount");
+            } 
+            else {
+                *Balance -= Withdraw;
+                printf("\nNew balance: $%lf", *Balance);
+            }
+        }
+    }
+}
+
+//handles all of the commands; such as newacc, login, logout, and exit 
+void CommandHandler(hashTable *ht, char *command, account **currentUser) {
+    if (strcmp(command, "newacc") == 0) {
+        char username[65];
+        char password[65];
+        double balance;
+
+        printf("Enter username: "); scanf("%s", username);
+        printf("Enter password: "); scanf("%s", password);
+        printf("Enter balance: "); scanf("%lf", &balance);
+
+        account *newAccount = AccountCreator(username, password, balance);
+        InsertAccount(ht, newAccount);
+
+        printf("Account created successfully.\n");
+    } 
+    else if (strcmp(command, "login") == 0) {
+        char username[BUFFER];
+        char password[BUFFER];
+
+        printf("Enter username: "); scanf("%s", username);
+        printf("Enter password: "); scanf("%s", password);
+
+        account *acc = findAccount(ht, username);
+        if (acc && strcmp(acc->Password, password) == 0) {
+            printf("Login successful.\n");
+            acc->Authenticated = true;
+            *currentUser = acc;
+            ShowBal(true, &(acc->Balance));
+            WithOrDep(&(acc->Authenticated), &(acc->Balance));
+        } 
+        else {
+            printf("Incorrect username or password.\n");
+        }
+    } 
+    else if (strcmp(command, "logout") == 0) {
+        if (*currentUser != NULL) {
+            (*currentUser)->Authenticated = false;
+            *currentUser = NULL;
+            printf("Logged out successfully.\n");
+        } 
+        else {
+            printf("You are not logged in currently.\n");
+        }
+    }
+    else if (strcmp(command, "exit") == 0) {
+        exit(0);
+    }
+}
+
+int main() {
+    hashTable ht = {0};
+    account *currentUser = NULL;
+
+    printf("Welcome to Aedan's bank!\n");
+    printf("Commands: newacc, login, logout, exit\n");
+
+    char command[7];
+    do {
+        printf("\n> "); scanf("%s", command);
+        CommandHandler(&ht, command, &currentUser);
+    } while (true);
+
+    return 0;
+}
