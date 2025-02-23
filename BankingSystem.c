@@ -6,7 +6,7 @@
 #define TABLE_SIZE 32 //hash table size
 #define BUFFER 65 //buffer space for username and password
 
-//self-referential-structure for linked lists when handling collisions from the hash
+//self-referential-structure to use linked lists when handling collisions from the hash, a.k.a. "chaining"
 typedef struct account {
     bool Authenticated;
     char Username[BUFFER];
@@ -19,7 +19,7 @@ typedef struct hashTable {
     account *table[TABLE_SIZE];
 } hashTable;
 
-account* AccountCreator(char *username, char *password, double balance) {
+account *AccountCreator(char *username, char *password, double balance) {
     //allocate memory for the new account
     account *newAccount = (account *)malloc(sizeof(account));
 
@@ -64,7 +64,7 @@ void InsertAccount(hashTable *ht, account *acc) {
 then traverses the linked list at that index in the hash table
 to find and return the account with the matching username;
 if no match is found, it returns NULL and prints a message.*/
-account* findAccount(hashTable *ht, char *username) {
+account *findAccount(hashTable *ht, char *username) {
     unsigned int index = hashCode(username);
 
     account *current = ht->table[index];
@@ -75,7 +75,7 @@ account* findAccount(hashTable *ht, char *username) {
         }
         current = current->next;
     }
-    printf("No account found with username '%s'\n", username); // Debug print
+
     return NULL;
 }
 
@@ -84,9 +84,8 @@ bool ShowBal(bool CheckUserPass, double *Balance) {
     if (CheckUserPass == true) {
         printf("\nBalance: $%lf\n", *Balance);
         return true;
-    } 
+    }
     else {
-        printf("\nIncorrect username or password.");
         return false;
     }
 }
@@ -95,7 +94,7 @@ bool ShowBal(bool CheckUserPass, double *Balance) {
 void WithOrDep(bool *ShowBalReceive, double *Balance) {
     if (*ShowBalReceive == true) {
         char answer[5];
-        printf("\nDeposit(dep) or Withdraw(with): "); scanf("%s", answer);
+        printf("\nDeposit(dep) or Withdraw(with): "); scanf("%4s", answer);
 
         double Deposit = 0;
         double Withdraw = 0;
@@ -119,41 +118,95 @@ void WithOrDep(bool *ShowBalReceive, double *Balance) {
     }
 }
 
-//handles all of the commands; such as newacc, login, logout, and exit 
-void CommandHandler(hashTable *ht, char *command, account **currentUser) {
-    if (strcmp(command, "newacc") == 0) {
-        char username[65];
-        char password[65];
-        double balance;
+//frees the memory of an individual account and any accounts chained to it
+void freeAccount(account *acc) {
+    account *current = acc;
+    account *nextAccount;
+    while (current != NULL) {
+        nextAccount = current->next;
+        free(current);
+        current = nextAccount;
+    }
+}
 
-        printf("Enter username: "); scanf("%s", username);
-        printf("Enter password: "); scanf("%s", password);
+//frees all of the accounts in the hash table
+void freeHashTable(hashTable *ht) {
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        if (ht->table[i] != NULL) {
+            freeAccount(ht->table[i]);
+        }
+    }
+}
+
+//handles all of the commands; such as newacc, login, logout, and exit 
+void CommandHandler(hashTable *ht, char *command, account **currentUser, bool *loggedIn) {
+    char username[BUFFER];
+    char password[BUFFER];
+    double balance;
+    
+    // NEWACC
+    if (strcmp(command, "newacc") == 0) {
+        printf("Enter username: "); fgets(username, sizeof(username), stdin);
+        printf("Enter password: "); fgets(password, sizeof(password), stdin);
         printf("Enter balance: "); scanf("%lf", &balance);
+
+        // Newline character remover
+        size_t usernameLen = strlen(username);
+        size_t passwordLen = strlen(password);
+        if (usernameLen > 0 && username[usernameLen - 1] == '\n') {
+            username[usernameLen - 1] = '\0';
+        }
+        else if (passwordLen > 0 && password[passwordLen - 1] == '\n') {
+            password[passwordLen - 1] = '\0';
+        }
 
         account *newAccount = AccountCreator(username, password, balance);
         InsertAccount(ht, newAccount);
 
         printf("Account created successfully.\n");
-    } 
-    else if (strcmp(command, "login") == 0) {
-        char username[BUFFER];
-        char password[BUFFER];
+        return;
+    }
 
-        printf("Enter username: "); scanf("%s", username);
-        printf("Enter password: "); scanf("%s", password);
+    // LOGIN
+    else if (strcmp(command, "login") == 0) {
+        
+        if (*loggedIn == true) {
+            printf("You must first log-out.\n");
+            return; // Exit out of the entire function
+        }
+
+        printf("Enter username: "); fgets(password, sizeof(password), stdin);
+        printf("Enter password: "); fgets(password, sizeof(password), stdin);
+
+        // Newline character remover
+        size_t usernameLen = strlen(username);
+        size_t passwordLen = strlen(password);
+        if (usernameLen > 0 && username[usernameLen - 1] == '\n') {
+            username[usernameLen - 1] = '\0';
+        }
+        else if (passwordLen > 0 && password[passwordLen - 1] == '\n') {
+            password[passwordLen - 1] = '\0';
+        }
 
         account *acc = findAccount(ht, username);
         if (acc && strcmp(acc->Password, password) == 0) {
             printf("Login successful.\n");
+            *loggedIn = true;
+
             acc->Authenticated = true;
             *currentUser = acc;
             ShowBal(true, &(acc->Balance));
-            WithOrDep(&(acc->Authenticated), &(acc->Balance));
-        } 
+            WithOrDep( &(acc->Authenticated), &(acc->Balance) );
+        }
+        else if (acc == NULL) {
+            printf("No account found with username '%s'\n", username);
+        }
         else {
             printf("Incorrect username or password.\n");
         }
-    } 
+    }
+
+    // LOGOUT
     else if (strcmp(command, "logout") == 0) {
         if (*currentUser != NULL) {
             (*currentUser)->Authenticated = false;
@@ -164,8 +217,16 @@ void CommandHandler(hashTable *ht, char *command, account **currentUser) {
             printf("You are not logged in currently.\n");
         }
     }
+
+    /*If user inputs "exit", free all of the memory dynamically allocated on the heap
+    then exit the program*/
     else if (strcmp(command, "exit") == 0) {
+        freeHashTable(ht);
         exit(0);
+    }
+
+    else {
+        printf("Invalid command.\n");
     }
 }
 
@@ -176,10 +237,15 @@ int main() {
     printf("Welcome to Aedan's bank!\n");
     printf("Commands: newacc, login, logout, exit\n");
 
+    /* Tracks whether the user is currently logged in or not.
+    If loggedIn = true, then the user is not able to login again,
+    but must first log out. */
+    bool loggedIn;
+
     char command[7];
     do {
-        printf("\n> "); scanf("%s", command);
-        CommandHandler(&ht, command, &currentUser);
+        printf("\n> "); scanf("%6s", command);
+        CommandHandler(&ht, command, &currentUser, &loggedIn);
     } while (true);
 
     return 0;
