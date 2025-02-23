@@ -3,10 +3,10 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define TABLE_SIZE 32 //hash table size
-#define BUFFER 65 //buffer space for username and password
+#define TABLE_SIZE 32 // Hash table size
+#define BUFFER 65 // Buffer space for username and password
 
-//self-referential-structure to use linked lists when handling collisions from the hash, a.k.a. "chaining"
+// Self-referential-structure to use linked lists when handling collisions from the hash, a.k.a. "chaining"
 typedef struct account {
     bool Authenticated;
     char Username[BUFFER];
@@ -20,7 +20,7 @@ typedef struct hashTable {
 } hashTable;
 
 account *AccountCreator(char *username, char *password, double balance) {
-    //allocate memory for the new account
+    // Allocate memory for the new account
     account *newAccount = (account *)malloc(sizeof(account));
 
     if (newAccount == NULL) {
@@ -28,7 +28,7 @@ account *AccountCreator(char *username, char *password, double balance) {
         exit(1);
     }
 
-    //initialize the variables
+    // Initialize the variables
     newAccount->Authenticated = false;
     strcpy(newAccount->Username, username);
     strcpy(newAccount->Password, password);
@@ -38,9 +38,9 @@ account *AccountCreator(char *username, char *password, double balance) {
     return newAccount;
 }
 
-/*This hashCode function generates a hash value for a given string (key)
+/* This hashCode function generates a hash value for a given string (key)
 by shifting the current hash value 5 bits to the left and adding the ASCII value of each character,
-then returns the hash value modulo the table size (TABLE_SIZE) to ensure it fits within the array bounds.*/
+then returns the hash value modulo the table size (TABLE_SIZE) to ensure it fits within the array bounds. */
 unsigned int hashCode(char *key) {
     unsigned int hash = 0;
     while (*key) {
@@ -50,9 +50,9 @@ unsigned int hashCode(char *key) {
     return hash % TABLE_SIZE;
 }
 
-/*The InsertAccount function calculates the hash index for the given account's username,
+/* The InsertAccount function calculates the hash index for the given account's username,
 then adds the account to the front of the linked list at that index in the hash table by updating the account's next pointer
-and the table entry.*/
+and the table entry. */
 void InsertAccount(hashTable *ht, account *acc) {
     unsigned int index = hashCode(acc->Username);
 
@@ -60,10 +60,10 @@ void InsertAccount(hashTable *ht, account *acc) {
     ht->table[index] = acc;
 }
 
-/*The findAccount function calculates the hash index for the given username,
+/* The findAccount function calculates the hash index for the given username,
 then traverses the linked list at that index in the hash table
 to find and return the account with the matching username;
-if no match is found, it returns NULL and prints a message.*/
+if no match is found, it returns NULL and prints a message. */
 account *findAccount(hashTable *ht, char *username) {
     unsigned int index = hashCode(username);
 
@@ -79,7 +79,7 @@ account *findAccount(hashTable *ht, char *username) {
     return NULL;
 }
 
-//if login successful, print balance
+// If login successful, print balance
 bool ShowBal(bool CheckUserPass, double *Balance) {
     if (CheckUserPass == true) {
         printf("\nBalance: $%lf\n", *Balance);
@@ -90,7 +90,7 @@ bool ShowBal(bool CheckUserPass, double *Balance) {
     }
 }
 
-//withdraw or deposit
+// Withdraw or deposit
 void WithOrDep(bool *ShowBalReceive, double *Balance) {
     if (*ShowBalReceive == true) {
         char answer[5];
@@ -118,7 +118,7 @@ void WithOrDep(bool *ShowBalReceive, double *Balance) {
     }
 }
 
-//frees the memory of an individual account and any accounts chained to it
+// Frees the memory of an individual account and any accounts chained to it
 void freeAccount(account *acc) {
     account *current = acc;
     account *nextAccount;
@@ -129,7 +129,7 @@ void freeAccount(account *acc) {
     }
 }
 
-//frees all of the accounts in the hash table
+// Frees all of the accounts in the hash table
 void freeHashTable(hashTable *ht) {
     for (int i = 0; i < TABLE_SIZE; i++) {
         if (ht->table[i] != NULL) {
@@ -138,8 +138,8 @@ void freeHashTable(hashTable *ht) {
     }
 }
 
-//handles all of the commands; such as newacc, login, logout, and exit 
-void CommandHandler(hashTable *ht, char *command, account **currentUser, bool *loggedIn) {
+// Handles all of the commands; such as newacc, login, logout, and exit 
+void CommandHandler(hashTable *ht, char *command, account **currentUser) {
     char username[BUFFER];
     char password[BUFFER];
     double balance;
@@ -170,12 +170,12 @@ void CommandHandler(hashTable *ht, char *command, account **currentUser, bool *l
     // LOGIN
     else if (strcmp(command, "login") == 0) {
         
-        if (*loggedIn == true) {
+        if ( (*currentUser != NULL) && ((*currentUser)->Authenticated == true) ) {
             printf("You must first log-out.\n");
             return; // Exit out of the entire function
         }
 
-        printf("Enter username: "); fgets(password, sizeof(password), stdin);
+        printf("Enter username: "); fgets(username, sizeof(username), stdin);
         printf("Enter password: "); fgets(password, sizeof(password), stdin);
 
         // Newline character remover
@@ -191,7 +191,6 @@ void CommandHandler(hashTable *ht, char *command, account **currentUser, bool *l
         account *acc = findAccount(ht, username);
         if (acc && strcmp(acc->Password, password) == 0) {
             printf("Login successful.\n");
-            *loggedIn = true;
 
             acc->Authenticated = true;
             *currentUser = acc;
@@ -218,8 +217,8 @@ void CommandHandler(hashTable *ht, char *command, account **currentUser, bool *l
         }
     }
 
-    /*If user inputs "exit", free all of the memory dynamically allocated on the heap
-    then exit the program*/
+    /* If user inputs "exit", free all of the memory dynamically allocated on the heap
+    then exit the program */
     else if (strcmp(command, "exit") == 0) {
         freeHashTable(ht);
         exit(0);
@@ -237,15 +236,10 @@ int main() {
     printf("Welcome to Aedan's bank!\n");
     printf("Commands: newacc, login, logout, exit\n");
 
-    /* Tracks whether the user is currently logged in or not.
-    If loggedIn = true, then the user is not able to login again,
-    but must first log out. */
-    bool loggedIn;
-
     char command[7];
     do {
         printf("\n> "); scanf("%6s", command);
-        CommandHandler(&ht, command, &currentUser, &loggedIn);
+        CommandHandler(&ht, command, &currentUser);
     } while (true);
 
     return 0;
