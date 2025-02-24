@@ -6,7 +6,8 @@
 #define TABLE_SIZE 32 // Hash table size
 #define BUFFER 65 // Buffer space for username and password
 
-// Self-referential-structure to use linked lists when handling collisions from the hash, a.k.a. "chaining"
+/* Self-referential-structure to use linked lists when handling collisions from the hash, 
+a.k.a. "chaining" */
 typedef struct account {
     bool Authenticated;
     char Username[BUFFER];
@@ -146,7 +147,7 @@ void CommandHandler(hashTable *ht, char *command, account **currentUser) {
     
     // NEWACC
     if (strcmp(command, "newacc") == 0) {
-        printf("Enter username: "); fgets(username, sizeof(username), stdin);
+        printf("Enter username: "); getchar(); fgets(username, sizeof(username), stdin);
         printf("Enter password: "); fgets(password, sizeof(password), stdin);
         printf("Enter balance: "); scanf("%lf", &balance);
 
@@ -175,7 +176,7 @@ void CommandHandler(hashTable *ht, char *command, account **currentUser) {
             return; // Exit out of the entire function
         }
 
-        printf("Enter username: "); fgets(username, sizeof(username), stdin);
+        printf("Enter username: "); getchar(); fgets(username, sizeof(username), stdin);
         printf("Enter password: "); fgets(password, sizeof(password), stdin);
 
         // Newline character remover
