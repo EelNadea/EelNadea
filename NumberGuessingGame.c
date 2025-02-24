@@ -5,7 +5,7 @@
 
 void SearchAlgorithm(unsigned int* ComputerGuess, unsigned int* RandNum, unsigned int* RngOfNumsToGss){
     //binary search
-    int low = 1;
+    unsigned int low = 1;
     unsigned int high = *RngOfNumsToGss;
     int NumOfTries = 0;
 
