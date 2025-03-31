@@ -6,17 +6,17 @@ void Encrypt(FILE **pFile, char fileName[], uint8_t *key) {
     FILE *ppFile = *pFile; //pointer-to-pointer
     int ch;
     uint8_t encryptedChars[256]; //encryptedChars means the Characters from the file, not the "char" datatype
-    uint8_t index = 0;
-    while ( (ch = fgetc(ppFile)) != EOF) {
+    uint16_t index = 0;
+    while ( (ch = fgetc(ppFile)) != EOF ) {
         if (index > 255) {
             printf("Error: File is too large.");
             fclose(ppFile);
             exit(1);
-        }
-
-        //ch is typecasted into uint8_t because fgetc returns usigned 8bit integers
-        //if not EOF (-1)
-        encryptedChars[index++] = ((uint8_t) ch) ^ *key; 
+        } else {
+            //ch is typecasted into uint8_t because fgetc returns usigned 8bit integers
+            //if not EOF (-1)
+            encryptedChars[index++] = ((uint8_t) ch) ^ *key;
+        } 
     }
 
     fclose(ppFile);
