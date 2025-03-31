@@ -2,20 +2,19 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-void Encrypt(FILE **FilePtr, char fileName[], uint16_t *key) {
+void Encrypt(FILE **FilePtr, char fileName[], uint8_t *key) {
     FILE *File = *FilePtr;
-    char ch;
-    uint16_t decimalCnvrtdChars[256];
-    uint16_t index = 0;
+    int ch;
+    uint8_t encryptedChars[256]; //encryptedChars means the Characters from the file, not the "char" datatype
+    uint8_t index = 0;
     while ( (ch = fgetc(File)) != EOF) {
-        if (index >= 255) {
+        if (index > 255) {
             printf("Error: File is too large.");
             fclose(File);
             exit(1);
         }
-        decimalCnvrtdChars[index++] = ((uint16_t)ch) ^ (*key);
+        encryptedChars[index++] = ((uint8_t) ch) ^ *key; 
     }
-    decimalCnvrtdChars[index] = '\0';
 
     fclose(File);
     File = fopen(fileName, "w");
@@ -26,18 +25,17 @@ void Encrypt(FILE **FilePtr, char fileName[], uint16_t *key) {
 
     *FilePtr = File;
     for (int a = 0; a < index; a++) {
-        fputc(decimalCnvrtdChars[a], File);
+        fputc(encryptedChars[a], File);
     }
 
     fclose(File);
-    *FilePtr = NULL;
 }
 
 int main() {
-    uint16_t key;
+    uint8_t key;
     char fileName[129];
     printf("Enter file name: "); scanf("%128s", fileName);
-    printf("Enter key: "); scanf("%hu", &key);
+    printf("Enter key: "); scanf("%hhu", &key);
 
     FILE *File = fopen(fileName, "r");
     if(File == NULL) { 
