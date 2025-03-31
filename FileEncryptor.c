@@ -13,6 +13,9 @@ void Encrypt(FILE **FilePtr, char fileName[], uint8_t *key) {
             fclose(File);
             exit(1);
         }
+
+        //ch is typecasted into uint8_t because fgetc returns usigned 8bit integers
+        //if not EOF (-1)
         encryptedChars[index++] = ((uint8_t) ch) ^ *key; 
     }
 
