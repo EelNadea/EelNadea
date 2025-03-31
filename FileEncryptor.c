@@ -19,7 +19,7 @@ void Encrypt(FILE **pFile, char fileName[], uint8_t *key) {
         encryptedChars[index++] = ((uint8_t) ch) ^ *key; 
     }
 
-    fclose(pFile);
+    fclose(ppFile);
     ppFile = fopen(fileName, "w");
     if(ppFile == NULL) { 
         printf("Error opening file.");
