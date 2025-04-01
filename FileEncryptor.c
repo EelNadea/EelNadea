@@ -3,14 +3,13 @@
 #include <stdlib.h>
 
 void Encrypt(FILE **pFile, char fileName[], uint8_t *key) {
-    FILE *ppFile = *pFile; //pointer-to-pointer
     int ch;
     uint8_t encryptedChars[256]; //encryptedChars means the Characters from the file, not the "char" datatype
     uint16_t index = 0;
-    while ( (ch = fgetc(ppFile)) != EOF ) {
+    while ( (ch = fgetc(*pFile)) != EOF ) {
         if (index > 255) {
             printf("Error: File is too large.");
-            fclose(ppFile);
+            fclose(*pFile);
             exit(1);
         } else {
             //ch is typecasted into uint8_t because fgetc returns usigned 8bit integers
@@ -20,18 +19,17 @@ void Encrypt(FILE **pFile, char fileName[], uint8_t *key) {
         } 
     }
 
-    fclose(ppFile);
-    ppFile = fopen(fileName, "w");
-    if(ppFile == NULL) { 
+    fclose(*pFile);
+    *pFile = fopen(fileName, "w");
+    if(*pFile == NULL) { 
         printf("Error opening file.");
         exit(1);
     } else {
-        *pFile = ppFile;
         for (int a = 0; a < index; a++) {
-            fputc(encryptedChars[a], ppFile);
+            fputc(encryptedChars[a], *pFile);
         }
 
-        fclose(ppFile);
+        fclose(*pFile);
     }
 }
 
