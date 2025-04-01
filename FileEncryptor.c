@@ -25,14 +25,14 @@ void Encrypt(FILE **pFile, char fileName[], uint8_t *key) {
     if(ppFile == NULL) { 
         printf("Error opening file.");
         exit(1);
-    }
+    } else {
+        *pFile = ppFile;
+        for (int a = 0; a < index; a++) {
+            fputc(encryptedChars[a], ppFile);
+        }
 
-    *pFile = ppFile;
-    for (int a = 0; a < index; a++) {
-        fputc(encryptedChars[a], ppFile);
+        fclose(ppFile);
     }
-
-    fclose(ppFile);
 }
 
 int main() {
