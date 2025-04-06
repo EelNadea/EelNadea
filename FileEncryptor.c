@@ -4,10 +4,10 @@
 
 void Encrypt(FILE **pFile, char fileName[], uint8_t *key) {
     int ch;
-    uint8_t encryptedChars[256]; //encryptedChars means the Characters from the file, not the "char" datatype
+    uint8_t encryptedChars[3072]; //encryptedChars means the Characters from the file, not the "char" datatype
     uint16_t index = 0;
     while ( (ch = fgetc(*pFile)) != EOF ) {
-        if (index > 255) {
+        if (index > 3071) {
             printf("Error: File is too large.");
             fclose(*pFile);
             exit(1);
