@@ -16,7 +16,7 @@ void WordPicker(char *chosenWord) {
 }
 
 int main() {
-    char chosenWord[7];
+    char chosenWord[5];
     WordPicker(chosenWord);
     uint8_t chosenWordLength = strlen(chosenWord);
 
