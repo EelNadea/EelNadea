@@ -1,1 +1,1 @@
-Young guy thats really interested in Computer Science
+Young guy that's really interested in Computer Science
